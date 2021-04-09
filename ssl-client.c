@@ -131,6 +131,7 @@ int main(int argc, char** argv)
   int               type, status, rating;
   char              description[500] = {0};
   char		    opChar;
+  char		    updateChar;
   char		    s[800];
   
   if (argc != 2)
@@ -214,54 +215,88 @@ int main(int argc, char** argv)
   	  scanf("%c", opChar);
 	  switch(opChar) {
 		  case 'c':
-		  //create
-		  fprintf(stdout, "Enter the title:\n");
-		  scanf("%s", title);
-		  fprintf(stdout, "Enter type (0 - movie, 1 - Tv show, 2 - cartoon, 3 - anime):\n");
-		  scanf("%d", type);
-		  fprintf(stdout, "Enter description (max of 500 characters):\n");
-		  scanf("%s", description);
-		  fprintf(stdout, "Enter status (0 - Plan to watch, 1 - Watching currently, 2 - Completed):\n");
-		  scanf("%d", status);
-		  if (status > 0) {
-		  	fprintf(stdout, "Enter rating (0 - 5, 0 being terrible and 5 being amazing):\n"); //for 1 or 2
-		  	scanf("%d", rating);
-		  	sprintf(s, "%c:%s:%d:%s:%d:%d", opChar, title, type, description, status, rating);
-		  } else {
-			sprintf(s, "%c:%s:%d:%s:%d", opChar, title, type, description, status);
-		  }
-		  break;
+		  case 'C':
+			  //create
+			  fprintf(stdout, "Enter the title:\n");
+			  scanf("%s", title);
+			  fprintf(stdout, "Enter type (0 - movie, 1 - Tv show, 2 - cartoon, 3 - anime):\n");
+			  scanf("%d", type);
+			  fprintf(stdout, "Enter description (max of 500 characters):\n");
+			  scanf("%s", description);
+			  fprintf(stdout, "Enter status (0 - Plan to watch, 1 - Watching currently, 2 - Completed):\n");
+			  scanf("%d", status);
+			  if (status > 0) {
+				fprintf(stdout, "Enter rating (0 - 5, 0 being terrible and 5 being amazing):\n"); //for 1 or 2
+				scanf("%d", rating);
+				sprintf(s, "%c:%s:%d:%s:%d:%d", opChar, title, type, description, status, rating);
+			  } else {
+				sprintf(s, "%c:%s:%d:%s:%d", opChar, title, type, description, status);
+			  }
+			  break;
 
 		  case 'f':
-		  //find
-		  fprintf(stdout, "Enter title you wish to search for:\n");
-		  scanf("%s", title);
-		  break;
+		  case 'F':
+			  //find
+			  fprintf(stdout, "Enter title you wish to search for:\n");
+			  scanf("%s", title);
+			  sprintf(s, "%c:%s", opChar, title);
+			  break;
 
 		  case 'd':
-		  //display whole list
-		  fprintf(stdout, "The whole list will be displayed:\n");
-		  break;
+		  case 'D':
+			  //display whole list
+			  fprintf(stdout, "The whole list will be displayed:\n");
+			  sprintf(s, "%c");  
+			  break;
 			
 		  case 'u':
-		  //update
-		  fprintf(stdout, "Enter title you wish to update:\n");
-		  fprintf(stdout, "Which field would you like to update? (Title, Type, Description, Status, Rating)\n");
-		  fprintf(stdout, "Enter new title:\n");
-		  fprintf(stdout, "Enter new type:\n");
-		  fprintf(stdout, "Enter new description:\n");
-		  fprintf(stdout, "Enter new status:\n");
-		  fprintf(stdout, "Enter new rating:\n");
-		  break;
+		  case 'U':
+			  //update
+			  fprintf(stdout, "Enter title you wish to update:\n");
+			  scanf("%s", title);
+			  fprintf(stdout, "Which field would you like to update? (Title, Media type, Description, Status, Rating)\n");
+			  scanf("%c", updateChar);
+			  switch(updateChar) {
+				case 't':
+				case 'T':
+			  	fprintf(stdout, "Enter new title:\n");
+				break;
+			  	
+				case 'm':
+				case 'M':
+				fprintf(stdout, "Enter new type:\n");
+				break;
+			  	
+				case 'd':
+				case 'D':
+				fprintf(stdout, "Enter new description:\n");
+				break;
+					  
+				case 's':
+				case 'S':
+			  	fprintf(stdout, "Enter new status:\n");
+				break;
+
+				case 'r':
+				case 'R':
+			  	fprintf(stdout, "Enter new rating:\n");
+			  	sprintf(s, "%c");
+				break;
+			  }
+			  break;
 
 		  case 'r':
-		  //remove
-		  fprintf(stdout, "Enter title of entry you wish to delete:\n");
-		  break;
+		  case 'R':
+			  //remove
+			  fprintf(stdout, "Enter title of entry you wish to delete:\n");
+			  break;
+			  
+		  default:
+			  fprintf(stdout, "Invalid statement");
 	  }
-	  fprintf(stdout, "built string: '%s'", s);
+	  fprintf(stdout, "built string: '%s'\n", s);
 	  fprintf(stdout, "Would you like to choose another operation? (yes or no)\n");
-  } while();
+  } while(false);
   
 //  Request filename from user and strip trailing newline character
 //  fprintf(stdout, "Enter file name: ");
