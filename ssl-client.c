@@ -37,6 +37,7 @@ SYNOPSIS: This program is a small client application that establishes a secure T
 #define MAX_HOSTNAME_LENGTH 256
 #define BUFFER_SIZE         256
 #define PATH_LENGTH         248
+#define STR_LENGTH	    512
 
 /******************************************************************************
 
@@ -212,25 +213,33 @@ int main(int argc, char** argv)
 
   do {
 	  fprintf(stdout, "Please choose an operation: (create, find, display, update, remove)\n");
-  	  scanf("%c", opChar);
-	  switch(opChar) {
+ 	  fgets(opChar, 20, stdin);
+	  switch(opChar[0]) {
 		  case 'c':
 		  case 'C':
 			  //create
 			  fprintf(stdout, "Enter the title:\n");
-			  scanf("%s", title);
-			  fprintf(stdout, "Enter type (0 - movie, 1 - Tv show, 2 - cartoon, 3 - anime):\n");
-			  scanf("%d", type);
-			  fprintf(stdout, "Enter description (max of 500 characters):\n");
-			  scanf("%s", description);
-			  fprintf(stdout, "Enter status (0 - Plan to watch, 1 - Watching currently, 2 - Completed):\n");
-			  scanf("%d", status);
-			  if (status > 0) {
-				fprintf(stdout, "Enter rating (0 - 5, 0 being terrible and 5 being amazing):\n"); //for 1 or 2
-				scanf("%d", rating);
-				sprintf(s, "%c:%s:%d:%s:%d:%d", opChar, title, type, description, status, rating);
+			  fgets(title, BUFFER_SIZE, stdin);
+			  title[strlen(title) - 1] = '\0';
+			  fprintf(stdout, "Enter type (1 - movie, 2 - Tv show, 3 - cartoon, 4 - anime):\n");
+			  fgets(temp, BUFFER_SIZE, stdin);
+			  type = atoi(temp);
+			  bzero(temp, sizeof(temp));
+			  fprintf(stdout, "Enter description (max of %d characters):\n", STR_LENGTH);
+			  fgets(description, STR_LENGTH, stdin);
+			  description[strlen(description) - 1] = '\0';
+			  fprintf(stdout, "Enter status (1 - Plan to watch, 2 - Watching currently, 3 - Completed):\n");
+			  fgets(temp, BUFFER_SIZE, stdin);
+			  status = atoi(temp);
+			  bzero(temp, sizeof(temp));
+			  if (status > 1) {
+				fprintf(stdout, "Enter rating (1 - 5, 1 being terrible and 5 being amazing):\n"); //for 1 or 2
+			  fgets(temp, BUFFER_SIZE, stdin);
+			  rating = atoi(temp);
+			  bzero(temp, sizeof(temp));
+				sprintf(s, "c:%s:%d:%s:%d:%d", title, type, description, status, rating);
 			  } else {
-				sprintf(s, "%c:%s:%d:%s:%d", opChar, title, type, description, status);
+				sprintf(s, "c:%s:%d:%s:%d", title, type, description, status);
 			  }
 			  break;
 
@@ -238,49 +247,68 @@ int main(int argc, char** argv)
 		  case 'F':
 			  //find
 			  fprintf(stdout, "Enter title you wish to search for:\n");
-			  scanf("%s", title);
-			  sprintf(s, "%c:%s", opChar, title);
+			  fgets(title, BUFFER_SIZE, stdin);
+			  title[strlen(title) - 1] = '\0';
+			  sprintf(s, "f:%s", title);
 			  break;
 
 		  case 'd':
 		  case 'D':
 			  //display whole list
 			  fprintf(stdout, "The whole list will be displayed:\n");
-			  sprintf(s, "%c");  
+			  sprintf(s, "d");
 			  break;
 			
 		  case 'u':
 		  case 'U':
 			  //update
 			  fprintf(stdout, "Enter title you wish to update:\n");
-			  scanf("%s", title);
-			  fprintf(stdout, "Which field would you like to update? (Title, Media type, Description, Status, Rating)\n");
-			  scanf("%c", updateChar);
-			  switch(updateChar) {
+			  fgets(title, BUFFER_SIZE, stdin);
+			  title[strlen(title) - 1] = '\0';
+			  fprintf(stdout, "Which field would you like to update? (Title, Media Type, Description, Status, Rating)\n");
+			  fgets(updateChar, 20, stdin);
+			  switch(updateChar[0]) {
 				case 't':
 				case 'T':
 			  	fprintf(stdout, "Enter new title:\n");
+				fgets(title, BUFFER_SIZE, stdin);
+				title[strlen(title) - 1] = '\0';
+				sprintf(s, "u:t:%s", title);
 				break;
 			  	
 				case 'm':
 				case 'M':
 				fprintf(stdout, "Enter new type:\n");
+				fgets(temp, BUFFER_SIZE, stdin);
+				type = atoi(temp);
+				bzero(temp, sizeof(temp));
+				sprintf(s, "u:m:%d", type);
 				break;
 			  	
 				case 'd':
 				case 'D':
 				fprintf(stdout, "Enter new description:\n");
+				fgets(description, BUFFER_SIZE, stdin);
+				title[strlen(description) - 1] = '\0';
+				sprintf(s, "u:d:%s", description);
 				break;
 					  
 				case 's':
 				case 'S':
 			  	fprintf(stdout, "Enter new status:\n");
+				fgets(temp, BUFFER_SIZE, stdin);
+				status = atoi(temp);
+				bzero(temp, sizeof(temp));
+				sprintf(s, "u:s:%d", status);
 				break;
 
 				case 'r':
 				case 'R':
 			  	fprintf(stdout, "Enter new rating:\n");
-			  	sprintf(s, "%c");
+				fgets(temp, BUFFER_SIZE, stdin);
+				rating = atoi(temp);
+				bzero(temp, sizeof(temp));
+				sprintf(s, "u:r:%d", rating);
 				break;
 			  }
 			  break;
@@ -292,11 +320,11 @@ int main(int argc, char** argv)
 			  break;
 			  
 		  default:
-			  fprintf(stdout, "Invalid statement");
+			  fprintf(stdout, "Invalid statement\n");
 	  }
 	  fprintf(stdout, "built string: '%s'\n", s);
 	  fprintf(stdout, "Would you like to choose another operation? (yes or no)\n");
-  } while(false);
+  } while(0);
   
 //  Request filename from user and strip trailing newline character
 //  fprintf(stdout, "Enter file name: ");
