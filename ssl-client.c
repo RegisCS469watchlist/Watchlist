@@ -212,7 +212,7 @@ int main(int argc, char** argv)
     }
 
   do {
-	  fprintf(stdout, "Please choose an operation: (create, find, display, update, remove)\n");
+	  fprintf(stdout, "Please choose an operation: ('c' = create, 'f' = find, 'd' = display, 'u' = update, 'r' = remove)\n");
  	  fgets(opChar, 20, stdin);
 	  switch(opChar[0]) {
 		  case 'c':
