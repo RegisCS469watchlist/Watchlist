@@ -32,6 +32,7 @@ SYNOPSIS: This program is a small server application that receives incoming TCP
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <gdbm.h>
+#include <signal.h>
 
 #define BUFFER_SIZE       800
 #define PATH_LENGTH       256
@@ -229,7 +230,6 @@ then the socket descriptor.  Once the session is complete, free the memory
 allocated to the SSL object and close the socket descriptor.
 
 ******************************************************************************/
-
 int main(int argc, char **argv)
 {
     SSL_CTX*     ssl_ctx;
@@ -241,6 +241,7 @@ int main(int argc, char **argv)
     int               type, status, rating;
     char              description[500] = {0};
     char		        opChar;
+    char 		*ptr;
 
     // Initialize and create SSL data structures and algorithms
     init_openssl();
@@ -254,12 +255,12 @@ int main(int argc, char **argv)
     const char* dbfilename = "watchlist.db";
     
     // Open the database for read/write, create if it doesn't already exist
-    dbf = gdbm_open(dbfilename, 0, GDBM_WRCREAT, 0666, 0);
+    /*dbf = gdbm_open(dbfilename, 0, GDBM_WRCREAT, 0776, 0);
     if (!dbf) {
       fprintf (stderr, "Could not open database file %s: %s\n", dbfilename,
 	  gdbm_strerror(GDBM_FILE_OPEN_ERROR));
     return EXIT_FAILURE;
-   }
+   }*/
     
     // Port can be specified on the command line. If it's not, use the default port 
     switch(argc)
@@ -282,8 +283,7 @@ int main(int argc, char **argv)
     sockfd = create_socket(port);
 
     // Wait for incoming connections and handle them as the arrive
-    while(true)
-      {
+    while(1) {
         SSL*               ssl;
 	int                client;
 	int                readfd;
@@ -328,18 +328,26 @@ int main(int argc, char **argv)
 
 	  bzero(buffer, BUFFER_SIZE);
 	  SSL_read(ssl, buffer, BUFFER_SIZE);
+
+	  // Open the database for read/write, create if it doesn't already exist
+	  dbf = gdbm_open(dbfilename, 0, GDBM_WRCREAT, 0776, 0);
+	  if (!dbf) {
+		  fprintf (stderr, "Could not open database file %s: %s: %s\n", dbfilename,
+				  gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
+		  return EXIT_FAILURE;
+	  }
+
 	  
 	  switch(buffer[0]) {
 	  	
 	  	case 'c':
 	  	case 'C':
 	  		// store values in variables
-	  		char *ptr = strtok(buffer, ":");
-	  		strcpy(opChar, ptr);
+	  		ptr = strtok(buffer, ":");
+	  		strcpy(&opChar, ptr);
 		    ptr = strtok(NULL, ":");
 		    strcpy(title, ptr);
 		    ptr = strtok(NULL, "");
-		    
 	  		// Represents the key and value for the database entry
 		    char* titlePtr = title;
 		    char  values[BUFFER_SIZE];
@@ -352,34 +360,10 @@ int main(int argc, char **argv)
   			
   			// Add the key-value pair to the database
 			gdbm_store(dbf, key, value, GDBM_INSERT);
-			fprintf(stdout, "Successfully inserted new item with key: %s\n", key.dptr);		  	
+			fprintf(stdout, "Successfully inserted new item with key: %s\n", key.dptr);	
       }
-
+	  gdbm_close(dbf);
 	  fprintf(stdout, "Server received message '%s'\n", buffer);
-	  
-	  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //	// Receive RPC request and transfer the file
 //	bzero(buffer, BUFFER_SIZE);
@@ -409,8 +393,9 @@ int main(int argc, char **argv)
 
     // Tear down and clean up server data structures before terminating
     SSL_CTX_free(ssl_ctx);
+    gdbm_close(dbf);
     cleanup_openssl();
     close(sockfd);
-
+    fprintf(stdout, "server: closed successfully\n");
     return 0;
 }

@@ -1,18 +1,20 @@
+CFLAGS := -lcrypto -lssl -lgdbm
+
 CC := gcc
 
-all: client server
+all: ssl-client ssl-server
 
-client: client.o
-	$(CC) -o client client.o 
+ssl-client: ssl-client.o
+	$(CC)  -o ssl-client ssl-client.o $(CFLAGS)
 
-client.o: client.c
-	$(CC) -c client.c
+ssl-client.o: ssl-client.c
+	$(CC)  -c ssl-client.c  $(CFLAGS)
 
-server: server.o
-	$(CC) -o server server.o -lgdbm
+ssl-server: ssl-server.o
+	$(CC)  -o ssl-server ssl-server.o $(CFLAGS) 
 
-server.o: server.c
-	$(CC) -c server.c -lgdbm
+ssl-server.o: ssl-server.c
+	$(CC) -c ssl-server.c $(CFLAGS)
 
 clean:
-	rm -f server server.o client client.o
+	rm -f ssl-server ssl-server.o ssl-client ssl-client.o
