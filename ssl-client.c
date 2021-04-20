@@ -1,7 +1,7 @@
 /******************************************************************************
 
-PROGRAM:  ssl-client.c
-AUTHOR:   ***** YOUR CODE HERE *****
+PROGRAM:  ssl-client.c for Watchlist Project
+AUTHOR:   Thomas, Riley, Stephanie
 COURSE:   CS469 - Distributed Systems (Regis University)
 SYNOPSIS: This program is a small client application that establishes a secure TCP 
           connection to a server and simply exchanges messages.  It uses a SSL/TLS
