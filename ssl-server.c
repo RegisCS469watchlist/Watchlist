@@ -233,7 +233,8 @@ int main(int argc, char **argv) {
   char title[BUFFER_SIZE] = {0};
   int type, status, rating;
   char description[500] = {0};
-  char opChar;
+  char temp[500] = {0};
+  char opChar, UopChar;
   char *ptr;
 
   // Initialize and create SSL data structures and algorithms
@@ -376,13 +377,110 @@ int main(int argc, char **argv) {
         datum fValue = gdbm_fetch(dbf, fKey);
         fprintf(stdout, "value fetched: %s\n", fValue.dptr);
         break;
+      case 'd':
+      case 'D':
+        fprintf(stdout, "begin display op\n");
+        datum dKey = gdbm_firstkey(dbf);
+        while (gdbm_exists(dbf, key)) {
+          char *ptr = strtok(value.dptr, ":");
+          strcpy(entry.title, ptr);
+          ptr = strtok(NULL, ":");
+          strcpy(entry.description, ptr);
+          ptr = strtok(NULL, ":");
+          entry.type = atoi(ptr);
+          ptr = strtok(NULL, ":");
+          entry.status = atoi(ptr);
+          ptr = strtok(NULL, ":");
+          entry.rating = atoi(ptr);
+          ptr = strtok(NULL, ":");
+          fprintf(stdout, "The entry %s is:\n %s, %s, %d, %d, %d\n", key.dptr,
+                  entry.title, entry.description,
+                  entry.type, entry.status, entry.rating);
+        free(value.dptr);
+        gdbm_nextkey(dbf, key);
+        break;
+      
+      case 'u':
+      case 'U':
+          fprintf(stdout, "begin update op\n");
+          if (gdbm_exists(dbf, key)) {
+            ptr = strtok(buffer, ":");
+            strcpy(&opChar, ptr);
+            ptr = strtok(NULL, ":");
+            strcpy(&UopChar, ptr);
+            ptr = strtok(NULL, ":");
+            strcpy(title, ptr);
+            ptr = strtok(NULL, ":");
+            strcpy(temp, ptr);
+            ptr = strtok(NULL, "");
+            // Represents the key and value for the database entry
+            titlePtr = title;
+            datum fKey = {titlePtr, strlen(titlePtr)};
+            datum fValue = gdbm_fetch(dbf, fKey);
+            strcpy(entry.title, ptr);
+            ptr = strtok(NULL, ":");
+            strcpy(entry.description, ptr);
+            ptr = strtok(NULL, ":");
+            entry.type = atoi(ptr);
+            ptr = strtok(NULL, ":");
+            entry.status = atoi(ptr);
+            ptr = strtok(NULL, ":");
+            entry.rating = atoi(ptr);
+            ptr = strtok(NULL, ":");
+            switch(UopChar) {
+              case 't':
+              case 'T':
+                entry.title = temp;
+                break;
+            
+              case 'm':
+              case 'M':
+                entry.type = temp;
+                break;
+              
+              case 'd':
+              case 'D':
+                entry.description = temp;
+                break;
+              
+              case 's':
+              case 'S':
+                entry.status = temp;
+                break;
+              
+              case 'r':
+              case 'R':
+                entry.rating = temp;
+                break;
+            
+              }
+          } else {
+            fprintf(stdout, "Item %s doesn't exist \n", title);
+          }
+      case 'r':
+      case 'R':
+        fprintf(stdout, "begin delete op\n");
+        // store values in variables
+        if (gdbm_exists(dbf, key)) {
+          ptr = strtok(buffer, ":");
+          strcpy(&opChar, ptr);
+          ptr = strtok(NULL, ":");
+          strcpy(title, ptr);
+          ptr = strtok(NULL, "");
+          // Represents the key and value for the database entry
+          titlePtr = title;
+          datum rKey = {titlePtr, strlen(titlePtr)};
+          gdbm_delete(dbf, rKey);
+          fprintf(stdout, "Successfully deleted %s\n", title);
+        } else {
+          fprintf(stdout, "Item %s doesn't exist \n", title);
+        }
+      break;
       }
-
       SSL_read(ssl, buffer, BUFFER_SIZE);
 
     } while (buffer[0] == 'y' || buffer[0] == 'Y');
     gdbm_close(dbf);
-    fprintf(stdout, "Server received message '%s'\n", buffer);
 
     //	// Receive RPC request and transfer the file
     //	bzero(buffer, BUFFER_SIZE);
