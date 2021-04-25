@@ -125,6 +125,7 @@ int main(int argc, char **argv) {
   SSL_CTX *ssl_ctx;
   SSL *ssl;
   char title[BUFFER_SIZE] = {0};
+  char newTitle[BUFFER_SIZE] = {0};
   int type, status, rating;
   char description[500] = {0};
   char opChar[20];
@@ -275,9 +276,9 @@ int main(int argc, char **argv) {
       case 't':
       case 'T':
         fprintf(stdout, "Enter new title:\n");
-        fgets(title, BUFFER_SIZE, stdin);
-        title[strlen(title) - 1] = '\0';
-        sprintf(s, "u:t:%s", title);
+        fgets(newTitle, BUFFER_SIZE, stdin);
+        newTitle[strlen(newTitle) - 1] = '\0';
+        sprintf(s, "u:t:%s%s", title, newTitle);
         break;
 
       case 'm':
@@ -286,7 +287,7 @@ int main(int argc, char **argv) {
         fgets(temp, BUFFER_SIZE, stdin);
         type = atoi(temp);
         bzero(temp, sizeof(temp));
-        sprintf(s, "u:m:%d", type);
+        sprintf(s, "u:m:%s%d", title, type);
         break;
 
       case 'd':
@@ -294,7 +295,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Enter new description:\n");
         fgets(description, BUFFER_SIZE, stdin);
         title[strlen(description) - 1] = '\0';
-        sprintf(s, "u:d:%s", description);
+        sprintf(s, "u:d:%s%s", title, description);
         break;
 
       case 's':
@@ -303,7 +304,7 @@ int main(int argc, char **argv) {
         fgets(temp, BUFFER_SIZE, stdin);
         status = atoi(temp);
         bzero(temp, sizeof(temp));
-        sprintf(s, "u:s:%d", status);
+        sprintf(s, "u:s:%s%d", title, status);
         break;
 
       case 'r':
@@ -312,7 +313,7 @@ int main(int argc, char **argv) {
         fgets(temp, BUFFER_SIZE, stdin);
         rating = atoi(temp);
         bzero(temp, sizeof(temp));
-        sprintf(s, "u:r:%d", rating);
+        sprintf(s, "u:r:%s%d", title, rating);
         break;
       }
       break;
