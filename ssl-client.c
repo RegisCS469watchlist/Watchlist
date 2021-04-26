@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Enter new title:\n");
         fgets(newTitle, BUFFER_SIZE, stdin);
         newTitle[strlen(newTitle) - 1] = '\0';
-        sprintf(s, "u:t:%s%s", title, newTitle);
+        sprintf(s, "u:t:%s:%s", title, newTitle);
         break;
 
       case 'm':
@@ -287,7 +287,7 @@ int main(int argc, char **argv) {
         fgets(temp, BUFFER_SIZE, stdin);
         type = atoi(temp);
         bzero(temp, sizeof(temp));
-        sprintf(s, "u:m:%s%d", title, type);
+        sprintf(s, "u:m:%s:%d", title, type);
         break;
 
       case 'd':
@@ -295,7 +295,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Enter new description:\n");
         fgets(description, BUFFER_SIZE, stdin);
         title[strlen(description) - 1] = '\0';
-        sprintf(s, "u:d:%s%s", title, description);
+        sprintf(s, "u:d:%s:%s", title, description);
         break;
 
       case 's':
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
         fgets(temp, BUFFER_SIZE, stdin);
         status = atoi(temp);
         bzero(temp, sizeof(temp));
-        sprintf(s, "u:s:%s%d", title, status);
+        sprintf(s, "u:s:%s:%d", title, status);
         break;
 
       case 'r':
@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
         fgets(temp, BUFFER_SIZE, stdin);
         rating = atoi(temp);
         bzero(temp, sizeof(temp));
-        sprintf(s, "u:r:%s%d", title, rating);
+        sprintf(s, "u:r:%s:%d", title, rating);
         break;
       }
       break;

@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
   int type, status, rating;
   char description[500] = {0};
   char temp[500] = {0};
-  char opChar, UopChar;
+  char opChar, uOpChar;
   char *ptr;
 
   // Initialize and create SSL data structures and algorithms
@@ -275,6 +275,8 @@ int main(int argc, char **argv) {
   // we have to specify which TCP/UDP port on which we are communicating as an
   // argument to our user-defined create_socket() function.
   sockfd = create_socket(port);
+
+  struct entry tempEntry;
 
   // Wait for incoming connections and handle them as the arrive
   while (1) {
@@ -381,87 +383,94 @@ int main(int argc, char **argv) {
       case 'D':
         fprintf(stdout, "begin display op\n");
         datum dKey = gdbm_firstkey(dbf);
-        while (gdbm_exists(dbf, key)) {
-          char *ptr = strtok(value.dptr, ":");
-          strcpy(entry.title, ptr);
+	//fprintf(stdout, "dbf val: %s\n", dKey.dptr);
+	struct entry tempEntry;
+        while (dKey.dptr) {
+	  datum dValue = gdbm_fetch(dbf, dKey);
+          ptr = strtok(dValue.dptr, ":");
+          tempEntry.type = atoi(ptr);
           ptr = strtok(NULL, ":");
-          strcpy(entry.description, ptr);
+          strcpy(tempEntry.description, ptr);
           ptr = strtok(NULL, ":");
-          entry.type = atoi(ptr);
+          tempEntry.status = atoi(ptr);
           ptr = strtok(NULL, ":");
-          entry.status = atoi(ptr);
-          ptr = strtok(NULL, ":");
-          entry.rating = atoi(ptr);
-          ptr = strtok(NULL, ":");
-          fprintf(stdout, "The entry %s is:\n %s, %s, %d, %d, %d\n", key.dptr,
-                  entry.title, entry.description,
-                  entry.type, entry.status, entry.rating);
-        free(value.dptr);
-        gdbm_nextkey(dbf, key);
+          tempEntry.rating = atoi(ptr);
+          fprintf(stdout, "The entry is: %s, %s, %d, %d, %d\n", dKey.dptr,
+			  tempEntry.description, tempEntry.type, 
+			  tempEntry.status, tempEntry.rating);
+	  free(dValue.dptr);
+	  free(dKey.dptr);
+          gdbm_nextkey(dbf, dKey);
+	}
         break;
       
       case 'u':
       case 'U':
+	  strtok(buffer, ":");
+	  ptr = strtok(NULL, ":");
+	  strcpy(&uOpChar, ptr);
+	  ptr = strtok(NULL, ":");
+	  strcpy(title, ptr);
+	  ptr = strtok(NULL, ":");
+	  strcpy(temp, ptr);
+
           fprintf(stdout, "begin update op\n");
-          if (gdbm_exists(dbf, key)) {
-            ptr = strtok(buffer, ":");
-            strcpy(&opChar, ptr);
+          // Represents the key and value for the database entry
+          titlePtr = title;
+          datum uKey = {titlePtr, strlen(titlePtr)};
+
+          if (gdbm_exists(dbf, fKey)) {
+            datum uValue = gdbm_fetch(dbf, uKey);
+            ptr = strtok(uValue.dptr, ":");
+            strcpy(tempEntry.description, ptr);
             ptr = strtok(NULL, ":");
-            strcpy(&UopChar, ptr);
+            tempEntry.type = atoi(ptr);
             ptr = strtok(NULL, ":");
-            strcpy(title, ptr);
+            tempEntry.status = atoi(ptr);
             ptr = strtok(NULL, ":");
-            strcpy(temp, ptr);
-            ptr = strtok(NULL, "");
-            // Represents the key and value for the database entry
-            titlePtr = title;
-            datum fKey = {titlePtr, strlen(titlePtr)};
-            datum fValue = gdbm_fetch(dbf, fKey);
-            strcpy(entry.title, ptr);
+            tempEntry.rating = atoi(ptr);
             ptr = strtok(NULL, ":");
-            strcpy(entry.description, ptr);
-            ptr = strtok(NULL, ":");
-            entry.type = atoi(ptr);
-            ptr = strtok(NULL, ":");
-            entry.status = atoi(ptr);
-            ptr = strtok(NULL, ":");
-            entry.rating = atoi(ptr);
-            ptr = strtok(NULL, ":");
-            switch(UopChar) {
+            switch(uOpChar) {
               case 't':
               case 'T':
-                entry.title = temp;
+                strcpy(tempEntry.title, temp);
                 break;
             
               case 'm':
               case 'M':
-                entry.type = temp;
+                tempEntry.type = atoi(temp);
                 break;
               
               case 'd':
               case 'D':
-                entry.description = temp;
+                strcpy(tempEntry.description, temp);
                 break;
               
               case 's':
               case 'S':
-                entry.status = temp;
+                tempEntry.status = atoi(temp);
                 break;
               
               case 'r':
               case 'R':
-                entry.rating = temp;
+                tempEntry.rating = atoi(temp);
                 break;
             
               }
+	  
           } else {
             fprintf(stdout, "Item %s doesn't exist \n", title);
           }
       case 'r':
       case 'R':
         fprintf(stdout, "begin delete op\n");
+	strtok(buffer, ":");
+	ptr = strtok(NULL, "");
+	strcpy(temp, ptr);
+	datum rKey = {temp, strlen(temp)};
+
         // store values in variables
-        if (gdbm_exists(dbf, key)) {
+        if (gdbm_exists(dbf, rKey)) {
           ptr = strtok(buffer, ":");
           strcpy(&opChar, ptr);
           ptr = strtok(NULL, ":");
