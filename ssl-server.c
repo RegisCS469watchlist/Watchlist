@@ -21,6 +21,9 @@ command prompt type:
           Some of the code and descriptions can be found in "Network Security
 with OpenSSL", O'Reilly Media, 2002.
 
+Some code provided by Prof. Hemmes for use in these projects. This is the server
+side for the Watchlist project.
+
 ******************************************************************************/
 #include <arpa/inet.h>
 #include <fcntl.h>
