@@ -1,4 +1,4 @@
-CFLAGS := -lcrypto -lssl -lgdbm
+CFLAGS := -lcrypto -lssl -lgdbm  -lcrypt
 
 CC := gcc
 

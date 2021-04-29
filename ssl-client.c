@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
   char opChar[20];
   char updateChar[20];
   char s[800];
-  char user_pass[100];
+  char user_pass[512];
   char temp[STR_LENGTH];
   char username[USERNAME_LENGTH];
   char password[PASSWORD_LENGTH];
@@ -260,12 +260,20 @@ int main(int argc, char **argv) {
             remote_host, port);
     exit(EXIT_FAILURE);
   }
-  
-    fprinf(stdout, "Please choose an operation (1 - Create Account, 2 - Log In) ");
+ 
+
+		    // identifier and two '$" separators
+		    char salt[] = "$1$........";
+
+    fprintf(stdout, "Please choose an operation (1 - Create Account, 2 - Log In) ");
+    fgets(opChar, 20, stdin);
+    op = opChar[0] - '0';
+    fprintf(stdout, "got %d\n", op);
     switch(op){
     	case 1:
     		fprintf(stdout, "Enter username: ");
     		fgets(username, USERNAME_LENGTH, stdin);
+		username[strlen(username) - 1] = '\0';
     		// The first three characters indicate which hashing algorithm to
 		    // use.  "$5$ selects the SHA256 algorithm.  I use MD5 ($1$) because
 		    // the hash is shorter. It still illustrates how this works. The length
@@ -296,6 +304,8 @@ int main(int argc, char **argv) {
 		    
 		    // Format string
 		    sprintf(user_pass, "1:%s:%s:%s", username, hash, salt);
+
+		    SSL_write(ssl, user_pass, sizeof(user_pass));
     		break;
     		
     	
@@ -322,18 +332,10 @@ int main(int argc, char **argv) {
     		break;
 	}
 
-    // Now we will re-enter the password and check the hashes
-    fprintf(stdout, "Enter the password again: ");
-    getPassword(verifyPassword);
-
-    strncpy(verifyHash, crypt(verifyPassword, salt), BUFFER_SIZE);
-    
-    fprintf(stdout, "\nThe hash of this password (w/ salt) is: %s\n", verifyHash);
-
-    if (strncmp(hash, verifyHash, BUFFER_SIZE) == 0)
+    /*if (strncmp(hash, verifyHash, BUFFER_SIZE) == 0)
       fprintf(stdout, "Passwords match. User authenticated\n");
     else
-      fprintf(stdout, "Passwords do not match\n");
+      fprintf(stdout, "Passwords do not match\n");*/
 
   do {
     fprintf(stdout, "Please choose an operation: ('c' = create, 'f' = find, "

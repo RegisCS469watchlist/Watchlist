@@ -207,7 +207,7 @@ struct entry {
 };
 
 // Struct user entry in database
-struct entry {
+struct user {
   char username[32];
   char hash[256];
   char salt[12];
@@ -338,7 +338,51 @@ int main(int argc, char **argv) {
               "Server: Established SSL/TLS connection with client (%s)\n",
               client_addr);
 
-    // Open the database for read/write, create if it doesn't already exist
+    SSL_read(ssl, buffer, BUFFER_SIZE);
+
+    switch(buffer[0] - '0') {
+	case 1:
+      	
+      	// Open the database for read/write, create if it doesn't already exist
+	    dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
+	    if (!dbf) {
+	      fprintf(stderr, "Could not open database file %s: %s: %s\n", "users.db",
+	              gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
+	      return EXIT_FAILURE;
+	    }
+	    // store values in variables
+	fprintf(stdout, "%s\n", buffer);
+        ptr = strtok(buffer, ":");
+        strcpy(&opChar, ptr);
+        ptr = strtok(NULL, ":");
+        strcpy(username, ptr);
+        ptr = strtok(NULL, ":");
+        strcpy(hash, ptr);
+        ptr = strtok(NULL, ":");
+        strcpy(salt, ptr);
+          
+        sprintf(temp, "%s:%s", hash, salt);
+
+        fprintf(stdout, "%s:%s:%s\n", username, hash, salt);
+          
+        usernamePtr = username;
+          
+        // Create a key-value pair to insert in the database. Must specify the
+	    // size of each datum in bytes.
+	    datum userKey = {usernamePtr, strlen(usernamePtr)};
+	    datum userValue = {temp, strlen(temp)};
+	    
+	    // Add the key-value pair to the database
+        gdbm_store(dbf, userKey, userValue, GDBM_INSERT);
+        fprintf(stdout, "Successfully inserted new username with key: %s\n",
+                userKey.dptr);
+        break; 
+ 
+	default:
+	fprintf(stdout, "error, please input 0 or 1\n");
+    }
+
+    gdbm_close(dbf);
     dbf = gdbm_open(dbfilename, 0, GDBM_WRCREAT, 0776, 0);
     if (!dbf) {
       fprintf(stderr, "Could not open database file %s: %s: %s\n", dbfilename,
@@ -530,7 +574,7 @@ int main(int argc, char **argv) {
         gdbm_store(dbf, userKey, userValue, GDBM_INSERT);
         fprintf(stdout, "Successfully inserted new username with key: %s\n",
                 userKey.dptr);
-        break;  
+        break; 
       }
       SSL_read(ssl, buffer, BUFFER_SIZE);
 
