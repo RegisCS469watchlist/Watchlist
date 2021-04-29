@@ -12,6 +12,9 @@ channels between a client and server using public key cryptography.
 Some of the code and descriptions can be found in "Network Security with
 OpenSSL", O'Reilly Media, 2002.
 
+Some code was provided by Prof. Hemmes for use. This is the client side for the 
+Watchlist project.
+
  ******************************************************************************/
 #include <arpa/inet.h>
 #include <crypt.h>
@@ -345,7 +348,7 @@ int main(int argc, char **argv) {
     case 'c':
     case 'C':
       // create
-      fprintf(stdout, "Enter the title:\n");
+      fprintf(stdout, "Enter the title: (do not include colons (':'))\n");
       fgets(title, BUFFER_SIZE, stdin);
       title[strlen(title) - 1] = '\0';
       fprintf(stdout,
