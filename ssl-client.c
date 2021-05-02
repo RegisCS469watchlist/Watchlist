@@ -12,25 +12,25 @@ channels between a client and server using public key cryptography.
 Some of the code and descriptions can be found in "Network Security with
 OpenSSL", O'Reilly Media, 2002.
 
-Some code was provided by Prof. Hemmes for use. This is the client side for the 
+Some code was provided by Prof. Hemmes for use. This is the client side for the
 Watchlist project.
 
  ******************************************************************************/
 #include <arpa/inet.h>
 #include <crypt.h>
-#include <time.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <resolv.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <termios.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -40,13 +40,13 @@ Watchlist project.
 #include <openssl/x509_vfy.h>
 
 #define DEFAULT_PORT 4433
-#define BACKUP_PORT  4465
+#define BACKUP_PORT 4465
 #define DEFAULT_HOST "localhost"
 #define MAX_HOSTNAME_LENGTH 256
 #define BUFFER_SIZE 256
 #define PATH_LENGTH 248
 #define STR_LENGTH 512
-#define SEED_LENGTH     8
+#define SEED_LENGTH 8
 #define PASSWORD_LENGTH 32
 #define USERNAME_LENGTH 32
 
@@ -104,28 +104,28 @@ int create_socket(char *hostname, unsigned int port) {
   return sockfd;
 }
 
-void getPassword(char* password) {
-    static struct termios oldsettings, newsettings;
-    int c, i = 0;
+void getPassword(char *password) {
+  static struct termios oldsettings, newsettings;
+  int c, i = 0;
 
-    // Save the current terminal settings and copy settings for resetting
-    tcgetattr(STDIN_FILENO, &oldsettings);
-    newsettings = oldsettings;
+  // Save the current terminal settings and copy settings for resetting
+  tcgetattr(STDIN_FILENO, &oldsettings);
+  newsettings = oldsettings;
 
-    // Hide, i.e., turn off echoing, the characters typed to the console 
-    newsettings.c_lflag &= ~(ECHO);
+  // Hide, i.e., turn off echoing, the characters typed to the console
+  newsettings.c_lflag &= ~(ECHO);
 
-    // Set the new terminal settings
-    tcsetattr(STDIN_FILENO, TCSANOW, &newsettings);
+  // Set the new terminal settings
+  tcsetattr(STDIN_FILENO, TCSANOW, &newsettings);
 
-    // Read the password from the console one character at a time
-    while ((c = getchar())!= '\n' && c != EOF && i < BUFFER_SIZE)
-      password[i++] = c;
-    
-    password[i] = '\0';
+  // Read the password from the console one character at a time
+  while ((c = getchar()) != '\n' && c != EOF && i < BUFFER_SIZE)
+    password[i++] = c;
 
-    // Restore the old (saved) terminal settings
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldsettings);
+  password[i] = '\0';
+
+  // Restore the old (saved) terminal settings
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldsettings);
 }
 
 /******************************************************************************
@@ -174,11 +174,11 @@ int main(int argc, char **argv) {
   char verifyPassword[PASSWORD_LENGTH];
   char hash[BUFFER_SIZE];
   char verifyHash[BUFFER_SIZE];
+  char *verify;
   const char *const seedchars = "./0123456789"
-	  "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz";
+                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                "abcdefghijklmnopqrstuvwxyz";
   unsigned long int seed[2];
-  
-  
 
   if (argc != 2) {
     fprintf(stderr, "Client: Usage: ssl-client <server name>:<port>\n");
@@ -230,18 +230,21 @@ int main(int argc, char **argv) {
   if (sockfd != 0)
     fprintf(stderr, "Client: Established TCP connection to '%s' on port %u\n",
             remote_host, port);
-            
+
   // First attempt to connect did not succeed. Try the backup server
   else {
     port = BACKUP_PORT;
     printf("Trying backup server on port %u\n", port);
     sockfd = create_socket(remote_host, port);
-    if(sockfd != 0)
-      fprintf(stderr, "Client: Established TCP connection to '%s' on port %u\n", remote_host, port);
+    if (sockfd != 0)
+      fprintf(stderr, "Client: Established TCP connection to '%s' on port %u\n",
+              remote_host, port);
 
     // Welp, neither worked. There are limits to everything
     else {
-      fprintf(stderr, "Client: Could not establish TCP connection to %s on port %u\n", remote_host, port);
+      fprintf(stderr,
+              "Client: Could not establish TCP connection to %s on port %u\n",
+              remote_host, port);
       exit(EXIT_FAILURE);
     }
   }
@@ -263,82 +266,83 @@ int main(int argc, char **argv) {
             remote_host, port);
     exit(EXIT_FAILURE);
   }
- 
 
-		    // identifier and two '$" separators
-		    char salt[] = "$1$........";
+  // identifier and two '$" separators
+  char salt[] = "$1$........";
 
-    fprintf(stdout, "Please choose an operation (1 - Create Account, 2 - Log In) ");
-    fgets(opChar, 20, stdin);
-    op = opChar[0] - '0';
-    fprintf(stdout, "got %d\n", op);
-    switch(op){
-    	case 1:
-    		fprintf(stdout, "Enter username: ");
-    		fgets(username, USERNAME_LENGTH, stdin);
-		username[strlen(username) - 1] = '\0';
-    		// The first three characters indicate which hashing algorithm to
-		    // use.  "$5$ selects the SHA256 algorithm.  I use MD5 ($1$) because
-		    // the hash is shorter. It still illustrates how this works. The length
-		    // of this char array is the seed length plus 3 to account for the
-		    // identifier and two '$" separators
-		    char salt[] = "$1$........";
-		
-		    // Generate a (not very) random seed. There are better ways to do this.
-		    // Specified in the GNU C Library documentation
-		    seed[0] = time(NULL);
-		    seed[1] = getpid() ^ (seed[0] >> 14 & 0x30000);
-		
-		    // Convert the salt into printable characters from the seedchars string
-		    for (int i = 0; i < 8; i++)
-		      salt[3+i] = seedchars[(seed[i/5] >> (i%5)*6) & 0x3f];
-		
-		    // Enter the password
-		    fprintf(stdout, "Enter password: ");
-		    getPassword(password);
-		    
-		    // Now we create a cryptographic hash of the password with the SHA256
-		    // algorithm using the generated salt string
-		    strncpy(hash, crypt(password, salt), BUFFER_SIZE);
-		    
-		    fprintf(stdout, "The password entered is: %s\n", password);
-		    fprintf(stdout, "The salt is: %s\n", salt);
-		    fprintf(stdout, "The hash of the password (w/ salt) is: %s\n", hash);
-		    
-		    // Format string
-		    sprintf(user_pass, "1:%s:%s:%s", username, hash, salt);
+  fprintf(stdout,
+          "Please choose an operation (1 - Create Account, 2 - Log In) ");
+  fgets(opChar, 20, stdin);
+  op = opChar[0] - '0';
+  fprintf(stdout, "got %d\n", op);
+  switch (op) {
+  case 1:
+    fprintf(stdout, "Enter username: ");
+    fgets(username, USERNAME_LENGTH, stdin);
+    username[strlen(username) - 1] = '\0';
+    // The first three characters indicate which hashing algorithm to
+    // use.  "$5$ selects the SHA256 algorithm.  I use MD5 ($1$) because
+    // the hash is shorter. It still illustrates how this works. The length
+    // of this char array is the seed length plus 3 to account for the
+    // identifier and two '$" separators
+    char salt[] = "$1$........";
 
-		    SSL_write(ssl, user_pass, sizeof(user_pass));
-    		break;
-    		
-    	
-    	case 2:
-    		fprintf(stdout, "Enter username: ");
-    		fgets(username, USERNAME_LENGTH, stdin);
-    		// Enter the password
-		    fprintf(stdout, "Enter password: ");
-		    getPassword(password);
-		    sprintf(user_pass, "2:%s", username);
-		    SSL_write(ssl, user_pass, sizeof(user_pass));
-		    bzero(user_pass, 100);
-		    
-		    SSL_read(ssl, salt, sizeof(salt));
-		    strncpy(hash, crypt(password, salt), BUFFER_SIZE);
-    		
-    		fprintf(stdout, "The password entered is: %s\n", password);
-		    fprintf(stdout, "The salt is: %s\n", salt);
-		    fprintf(stdout, "The hash of the password (w/ salt) is: %s\n", hash);
-		    // Format string
-		    sprintf(user_pass, "2:%s:%s:%s", username, hash, salt);
-    		SSL_write(ssl, user_pass, sizeof(user_pass));
-    		
-    		break;
-	}
+    // Generate a (not very) random seed. There are better ways to do this.
+    // Specified in the GNU C Library documentation
+    seed[0] = time(NULL);
+    seed[1] = getpid() ^ (seed[0] >> 14 & 0x30000);
 
-    /*if (strncmp(hash, verifyHash, BUFFER_SIZE) == 0)
-      fprintf(stdout, "Passwords match. User authenticated\n");
-    else
-      fprintf(stdout, "Passwords do not match\n");*/
+    // Convert the salt into printable characters from the seedchars string
+    for (int i = 0; i < 8; i++)
+      salt[3 + i] = seedchars[(seed[i / 5] >> (i % 5) * 6) & 0x3f];
+
+    // Enter the password
+    fprintf(stdout, "Enter password: ");
+    getPassword(password);
+
+    // Now we create a cryptographic hash of the password with the SHA256
+    // algorithm using the generated salt string
+    strncpy(hash, crypt(password, salt), BUFFER_SIZE);
+
+    fprintf(stdout, "The password entered is: %s\n", password);
+    fprintf(stdout, "The salt is: %s\n", salt);
+    fprintf(stdout, "The hash of the password (w/ salt) is: %s\n", hash);
+
+    // Format string
+    sprintf(user_pass, "1:%s:%s:%s", username, hash, salt);
+
+    SSL_write(ssl, user_pass, sizeof(user_pass));
+    break;
+
+  case 2:
+    fprintf(stdout, "Enter username: ");
+    fgets(username, USERNAME_LENGTH, stdin);
+    username[strlen(username) - 1] = '\0';
+
+    // Enter the password
+    fprintf(stdout, "Enter password: ");
+    getPassword(password);
+    sprintf(user_pass, "2:%s", username);
+    SSL_write(ssl, user_pass, sizeof(user_pass));
+    bzero(user_pass, 100);
+
+    SSL_read(ssl, salt, sizeof(salt));
+    strncpy(hash, crypt(password, salt), BUFFER_SIZE);
+
+    fprintf(stdout, "The password entered is: %s\n", password);
+    fprintf(stdout, "The salt is: %s\n", salt);
+    fprintf(stdout, "The hash of the password (w/ salt) is: %s\n", hash);
+    // Format string
+    SSL_write(ssl, hash, sizeof(hash));
+
+    SSL_read(ssl, verify, sizeof(verify));
+    if(!atoi(verify)){
+	    fprintf(stdout, "client: User couldn't be verifed. Please make an account.");
+    }
+    exit(1);
+    break;
+  }
+
 
   do {
     fprintf(stdout, "Please choose an operation: ('c' = create, 'f' = find, "

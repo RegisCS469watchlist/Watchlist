@@ -243,10 +243,10 @@ int main(int argc, char **argv) {
   char title[BUFFER_SIZE] = {0};
   char username[32];
   char hash[256];
-  char verifyhash[256];
-  char salt[12]; 
+  char verifyHash[256];
+  char salt[12];
   int type, status, rating;
-  char verify;
+  char *verify;
   char description[500] = {0};
   char temp[500] = {0};
   char opChar, uOpChar;
@@ -345,86 +345,90 @@ int main(int argc, char **argv) {
 
     SSL_read(ssl, buffer, BUFFER_SIZE);
 
-    switch(buffer[0] - '0') {
-	case 1:
-      	
-      	// Open the database for read/write, create if it doesn't already exist
-	    dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
-	    if (!dbf) {
-	      fprintf(stderr, "Could not open database file %s: %s: %s\n", "users.db",
-	              gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
-	      return EXIT_FAILURE;
-	    }
-	    // store values in variables
-	fprintf(stdout, "%s\n", buffer);
-        ptr = strtok(buffer, ":");
-        strcpy(&opChar, ptr);
-        ptr = strtok(NULL, ":");
-        strcpy(username, ptr);
-        ptr = strtok(NULL, ":");
-        strcpy(hash, ptr);
-        ptr = strtok(NULL, ":");
-        strcpy(salt, ptr);
-          
-        sprintf(temp, "%s:%s", hash, salt);
+    switch (buffer[0] - '0') {
+    case 1:
 
-        fprintf(stdout, "%s:%s:%s\n", username, hash, salt);
-          
-        usernamePtr = username;
-          
-        // Create a key-value pair to insert in the database. Must specify the
-	    // size of each datum in bytes.
-	    datum userKey = {usernamePtr, strlen(usernamePtr)};
-	    datum userValue = {temp, strlen(temp)};
-	    
-	    // Add the key-value pair to the database
-        gdbm_store(dbf, userKey, userValue, GDBM_INSERT);
-        fprintf(stdout, "Successfully inserted new username with key: %s\n",
-                userKey.dptr);
-        break; 
-        
+      // Open the database for read/write, create if it doesn't already exist
+      dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
+      if (!dbf) {
+        fprintf(stderr, "Could not open database file %s: %s: %s\n", "users.db",
+                gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
+        return EXIT_FAILURE;
+      }
+      // store values in variables
+      fprintf(stdout, "%s\n", buffer);
+      ptr = strtok(buffer, ":");
+      strcpy(&opChar, ptr);
+      ptr = strtok(NULL, ":");
+      strcpy(username, ptr);
+      ptr = strtok(NULL, ":");
+      strcpy(hash, ptr);
+      ptr = strtok(NULL, ":");
+      strcpy(salt, ptr);
+
+      sprintf(temp, "%s:%s", hash, salt);
+
+      fprintf(stdout, "%s:%s:%s\n", username, hash, salt);
+
+      usernamePtr = username;
+
+      // Create a key-value pair to insert in the database. Must specify the
+      // size of each datum in bytes.
+      datum userKey = {usernamePtr, strlen(usernamePtr)};
+      datum userValue = {temp, strlen(temp)};
+
+      // Add the key-value pair to the database
+      gdbm_store(dbf, userKey, userValue, GDBM_INSERT);
+      fprintf(stdout, "Successfully inserted new username with key: %s\n",
+              userKey.dptr);
+      break;
+
     case 2:
-    	// Open the database for read/write, create if it doesn't already exist
-	    dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
-	    if (!dbf) {
-	      fprintf(stderr, "Could not open database file %s: %s: %s\n", "users.db",
-	              gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
-	      return EXIT_FAILURE;
-	    }
-	    // store values in variables (only capturing username)
-        ptr = strtok(buffer, ":");
-        strcpy(&opChar, ptr);
-        ptr = strtok(NULL, ":");
-        strcpy(username, ptr);
-        
-        usernamePtr = username;
-	    
-	    datum userKey = {usernamePtr, strlen(usernamePtr)};
-        datum userValue = gdbm_fetch(dbf, fKey);
-        
-        //access salt and write back to client
-        ptr = strtok(buffer, ":");
-        strcpy(hash, ptr);
-        ptr = strtok(NULL, ":");
-        strcpy(salt, ptr);
-    	ptr = strtok(NULL, ":");
-    	
-    	SSL_write(ssl, salt, sizeof(salt));
-    	
-    	//read hash from client
-    	SSL_read(ssl, hash, sizeof(hash));
-    	
-    	if (strncmp(hash, verifyHash, BUFFER_SIZE) == 0)
-          fprintf(stdout, "Passwords match. User authenticated\n");
-          verify = "1";
-        else
-          fprintf(stdout, "Passwords do not match\n");
-          verify = "0";
-        
-        SSL_write(ssl, verify, sizeof(verify));
- 
-	default:
-	fprintf(stdout, "error, please input 0 or 1\n");
+      // Open the database for read/write, create if it doesn't already exist
+      dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
+      if (!dbf) {
+        fprintf(stderr, "Could not open database file %s: %s: %s\n", "users.db",
+                gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
+        return EXIT_FAILURE;
+      }
+
+      // store values in variables (only capturing username)
+      ptr = strtok(buffer, ":");
+      strcpy(&opChar, ptr);
+      ptr = strtok(NULL, ":");
+      strcpy(username, ptr);
+
+      usernamePtr = username;
+
+      datum loginKey = {usernamePtr, strlen(usernamePtr)};
+      datum loginValue = gdbm_fetch(dbf, loginKey);
+
+      // access salt and write back to client
+      ptr = strtok(loginValue.dptr, ":");
+      strcpy(hash, ptr);
+      ptr = strtok(NULL, ":");
+      strcpy(salt, ptr);
+
+      SSL_write(ssl, salt, sizeof(salt));
+
+      // read hash from client
+      SSL_read(ssl, verifyHash, sizeof(hash));
+
+      fprintf(stdout, "server: hash = |%s|, verifyHash = |%s|\n", hash, verifyHash);
+
+      if (strncmp(hash, verifyHash, BUFFER_SIZE) == 0) {
+        fprintf(stdout, "Passwords match. User authenticated\n");
+        verify = "1";
+      } else {
+        fprintf(stdout, "Passwords do not match\n");
+        verify = "0";
+      }
+
+      SSL_write(ssl, verify, sizeof(verify));
+      break;
+
+    default:
+      fprintf(stdout, "server: error, please input 0 or 1\n");
     }
 
     gdbm_close(dbf);
@@ -483,10 +487,10 @@ int main(int argc, char **argv) {
       case 'D':
         fprintf(stdout, "begin display op\n");
         datum dKey = gdbm_firstkey(dbf);
-	//fprintf(stdout, "dbf val: %s\n", dKey.dptr);
-	struct entry tempEntry;
+        // fprintf(stdout, "dbf val: %s\n", dKey.dptr);
+        struct entry tempEntry;
         while (dKey.dptr) {
-	  datum dValue = gdbm_fetch(dbf, dKey);
+          datum dValue = gdbm_fetch(dbf, dKey);
           ptr = strtok(dValue.dptr, ":");
           tempEntry.type = atoi(ptr);
           ptr = strtok(NULL, ":");
@@ -496,78 +500,77 @@ int main(int argc, char **argv) {
           ptr = strtok(NULL, ":");
           tempEntry.rating = atoi(ptr);
           fprintf(stdout, "The entry is: %s, %s, %d, %d, %d\n", dKey.dptr,
-			  tempEntry.description, tempEntry.type, 
-			  tempEntry.status, tempEntry.rating);
-	  free(dValue.dptr);
-	  free(dKey.dptr);
+                  tempEntry.description, tempEntry.type, tempEntry.status,
+                  tempEntry.rating);
+          free(dValue.dptr);
+          free(dKey.dptr);
           gdbm_nextkey(dbf, dKey);
-	}
+        }
         break;
-      
+
       case 'u':
       case 'U':
-	  strtok(buffer, ":");
-	  ptr = strtok(NULL, ":");
-	  strcpy(&uOpChar, ptr);
-	  ptr = strtok(NULL, ":");
-	  strcpy(title, ptr);
-	  ptr = strtok(NULL, ":");
-	  strcpy(temp, ptr);
+        strtok(buffer, ":");
+        ptr = strtok(NULL, ":");
+        strcpy(&uOpChar, ptr);
+        ptr = strtok(NULL, ":");
+        strcpy(title, ptr);
+        ptr = strtok(NULL, ":");
+        strcpy(temp, ptr);
 
-          fprintf(stdout, "begin update op\n");
-          // Represents the key and value for the database entry
-          titlePtr = title;
-          datum uKey = {titlePtr, strlen(titlePtr)};
+        fprintf(stdout, "begin update op\n");
+        // Represents the key and value for the database entry
+        titlePtr = title;
+        datum uKey = {titlePtr, strlen(titlePtr)};
 
-          if (gdbm_exists(dbf, fKey)) {
-            datum uValue = gdbm_fetch(dbf, uKey);
-            ptr = strtok(uValue.dptr, ":");
-            strcpy(tempEntry.description, ptr);
-            ptr = strtok(NULL, ":");
-            tempEntry.type = atoi(ptr);
-            ptr = strtok(NULL, ":");
-            tempEntry.status = atoi(ptr);
-            ptr = strtok(NULL, ":");
-            tempEntry.rating = atoi(ptr);
-            ptr = strtok(NULL, ":");
-            switch(uOpChar) {
-              case 't':
-              case 'T':
-                strcpy(tempEntry.title, temp);
-                break;
-            
-              case 'm':
-              case 'M':
-                tempEntry.type = atoi(temp);
-                break;
-              
-              case 'd':
-              case 'D':
-                strcpy(tempEntry.description, temp);
-                break;
-              
-              case 's':
-              case 'S':
-                tempEntry.status = atoi(temp);
-                break;
-              
-              case 'r':
-              case 'R':
-                tempEntry.rating = atoi(temp);
-                break;
-            
-              }
-	  
-          } else {
-            fprintf(stdout, "Item %s doesn't exist \n", title);
+        if (gdbm_exists(dbf, fKey)) {
+          datum uValue = gdbm_fetch(dbf, uKey);
+          ptr = strtok(uValue.dptr, ":");
+          strcpy(tempEntry.description, ptr);
+          ptr = strtok(NULL, ":");
+          tempEntry.type = atoi(ptr);
+          ptr = strtok(NULL, ":");
+          tempEntry.status = atoi(ptr);
+          ptr = strtok(NULL, ":");
+          tempEntry.rating = atoi(ptr);
+          ptr = strtok(NULL, ":");
+          switch (uOpChar) {
+          case 't':
+          case 'T':
+            strcpy(tempEntry.title, temp);
+            break;
+
+          case 'm':
+          case 'M':
+            tempEntry.type = atoi(temp);
+            break;
+
+          case 'd':
+          case 'D':
+            strcpy(tempEntry.description, temp);
+            break;
+
+          case 's':
+          case 'S':
+            tempEntry.status = atoi(temp);
+            break;
+
+          case 'r':
+          case 'R':
+            tempEntry.rating = atoi(temp);
+            break;
           }
+
+        } else {
+          fprintf(stdout, "Item %s doesn't exist \n", title);
+        }
       case 'r':
       case 'R':
         fprintf(stdout, "begin delete op\n");
-	strtok(buffer, ":");
-	ptr = strtok(NULL, "");
-	strcpy(temp, ptr);
-	datum rKey = {temp, strlen(temp)};
+        strtok(buffer, ":");
+        ptr = strtok(NULL, "");
+        strcpy(temp, ptr);
+        datum rKey = {temp, strlen(temp)};
 
         // store values in variables
         if (gdbm_exists(dbf, rKey)) {
@@ -584,42 +587,45 @@ int main(int argc, char **argv) {
         } else {
           fprintf(stdout, "Item %s doesn't exist \n", title);
         }
-      break;
-//      case 1:
-//      	gdbm_close(dbf);
-//      	
-//      	// Open the database for read/write, create if it doesn't already exist
-//	    dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
-//	    if (!dbf) {
-//	      fprintf(stderr, "Could not open database file %s: %s: %s\n", "users.db",
-//	              gdbm_strerror(GDBM_FILE_OPEN_ERROR), strerror(errno));
-//	      return EXIT_FAILURE;
-//	    }
-//	    // store values in variables
-//        ptr = strtok(buffer, ":");
-//        strcpy(&opChar, ptr);
-//        ptr = strtok(NULL, ":");
-//        strcpy(username, ptr);
-//        ptr = strtok(NULL, "");
-//        strcpy(hash, ptr);
-//        ptr = strtok(NULL, ":");
-//        strcpy(salt, ptr);
-//        ptr = strtok(NULL, ":");
-//          
-//        sprintf(temp, "%s:%s", hash, salt);
-//          
-//        usernamePtr = username;
-//          
-//        // Create a key-value pair to insert in the database. Must specify the
-//	    // size of each datum in bytes.
-//	    datum userKey = {usernamePtr, strlen(usernamePtr)};
-//	    datum userValue = {temp, strlen(temp)};
-//	    
-//	    // Add the key-value pair to the database
-//        gdbm_store(dbf, userKey, userValue, GDBM_INSERT);
-//        fprintf(stdout, "Successfully inserted new username with key: %s\n",
-//                userKey.dptr);
-//        break; 
+        break;
+        //      case 1:
+        //      	gdbm_close(dbf);
+        //
+        //      	// Open the database for read/write, create if it
+        //      doesn't already exist
+        //	    dbf = gdbm_open("users.db", 0, GDBM_WRCREAT, 0776, 0);
+        //	    if (!dbf) {
+        //	      fprintf(stderr, "Could not open database file %s: %s:
+        //%s\n", "users.db", 	              gdbm_strerror(GDBM_FILE_OPEN_ERROR),
+        //strerror(errno)); 	      return EXIT_FAILURE;
+        //	    }
+        //	    // store values in variables
+        //        ptr = strtok(buffer, ":");
+        //        strcpy(&opChar, ptr);
+        //        ptr = strtok(NULL, ":");
+        //        strcpy(username, ptr);
+        //        ptr = strtok(NULL, "");
+        //        strcpy(hash, ptr);
+        //        ptr = strtok(NULL, ":");
+        //        strcpy(salt, ptr);
+        //        ptr = strtok(NULL, ":");
+        //
+        //        sprintf(temp, "%s:%s", hash, salt);
+        //
+        //        usernamePtr = username;
+        //
+        //        // Create a key-value pair to insert in the database. Must
+        //        specify the
+        //	    // size of each datum in bytes.
+        //	    datum userKey = {usernamePtr, strlen(usernamePtr)};
+        //	    datum userValue = {temp, strlen(temp)};
+        //
+        //	    // Add the key-value pair to the database
+        //        gdbm_store(dbf, userKey, userValue, GDBM_INSERT);
+        //        fprintf(stdout, "Successfully inserted new username with key:
+        //        %s\n",
+        //                userKey.dptr);
+        //        break;
       }
       SSL_read(ssl, buffer, BUFFER_SIZE);
 
@@ -633,7 +639,7 @@ int main(int argc, char **argv) {
     //	  readfd = open(filename, O_RDONLY);
     //	  if (readfd < 0) {
     //	    fprintf(stderr, "Server: Could not open file \"%s\": %s\n",
-    //filename, strerror(errno)); 	    sprintf(buffer, "error %d", errno);
+    // filename, strerror(errno)); 	    sprintf(buffer, "error %d", errno);
     //	    SSL_write(ssl, buffer, strlen(buffer)+1);
     //	  } else {
     //	    do {
@@ -643,7 +649,7 @@ int main(int argc, char **argv) {
     //	    close(readfd);
     //	    // File transfer complete
     //	    fprintf(stdout, "Server: Completed file transfer to client (%s)\n",
-    //client_addr);
+    // client_addr);
     //	  }
     //	}
 
